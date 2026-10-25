@@ -35,6 +35,7 @@ jobs:
           unzip -q wordcraft-web.zip -d /tmp/wc_extract
           cp -r /tmp/wc_extract/wordcraft-web-0.10.0/* app/src/main/assets/wordcraft/
           rm -rf /tmp/wc_extract wordcraft-web.zip
+          python3 tools/fetch_fonts.py app/src/main/assets/wordcraft/fonts
           python3 tools/patch_index.py app/src/main/assets/wordcraft/index.html
 
       - name: Generate Signing Keystore
