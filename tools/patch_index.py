@@ -29,11 +29,56 @@ BRIDGE_AND_FONT_SNIPPET = """  <script>
           return origClick.apply(this, arguments);
         };
 
-        // 2. Prepare keyboard helper
-        window.__prepareKeyboard = function() {
-          const inp = document.querySelector('input');
+        function getCanvas() {
+          return document.querySelector('canvas') || document.getElementById('wordcraft_canvas');
+        }
+        function getInput() {
+          return document.querySelector('input');
+        }
+
+        // Lock inputmode to "none" so Chromium Android NEVER pops up the virtual keyboard on touch/scroll/selection
+        function lockInputMode() {
+          const inp = getInput();
+          if (inp && !window.__softKeyboardRequested) {
+            if (inp.getAttribute('inputmode') !== 'none') {
+              inp.setAttribute('inputmode', 'none');
+            }
+          }
+        }
+
+        const observer = new MutationObserver(function() {
+          lockInputMode();
+        });
+        observer.observe(document.documentElement || document.body, { childList: true, subtree: true });
+        setInterval(lockInputMode, 200);
+
+        window.__showKeyboard = function() {
+          window.__softKeyboardRequested = true;
+          const inp = getInput();
           if (inp) {
-            try { inp.focus({ preventScroll: true }); } catch (err) { inp.focus(); }
+            inp.setAttribute('inputmode', 'text');
+            try { inp.focus({ preventScroll: true }); } catch (e) { inp.focus(); }
+          }
+        };
+
+        window.__hideKeyboard = function() {
+          window.__softKeyboardRequested = false;
+          const inp = getInput();
+          if (inp) {
+            inp.setAttribute('inputmode', 'none');
+            try { inp.blur(); } catch (e) {}
+          }
+          const cvs = getCanvas();
+          if (cvs) {
+            try { cvs.focus({ preventScroll: true }); } catch (e) {}
+          }
+        };
+
+        window.__onKeyboardHidden = function() {
+          window.__softKeyboardRequested = false;
+          const inp = getInput();
+          if (inp) {
+            inp.setAttribute('inputmode', 'none');
           }
         };
 
@@ -65,7 +110,7 @@ BRIDGE_AND_FONT_SNIPPET = """  <script>
           if (touchMoved) return; // Ignore drag / scroll / selection
           const now = Date.now();
           if (now - lastTapTime < 350) {
-            if (window.__prepareKeyboard) window.__prepareKeyboard();
+            if (window.__showKeyboard) window.__showKeyboard();
             if (window.AndroidBridge && window.AndroidBridge.showKeyboard) {
               window.AndroidBridge.showKeyboard();
             }
